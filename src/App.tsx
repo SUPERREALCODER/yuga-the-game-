@@ -3,143 +3,311 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from 'react';
-import { motion } from 'motion/react';
-import { IsometricMap } from './components/IsometricMap';
-import { HabitPanel } from './components/HabitPanel';
-import { AdvisoryCouncil } from './components/AdvisoryCouncil';
-import { Coins, Users, Landmark, Microscope, Palette, Menu, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { 
+  LayoutDashboard, 
+  Zap, 
+  Database, 
+  Terminal, 
+  Activity, 
+  Target, 
+  Clock, 
+  Code2, 
+  ChevronRight,
+  Menu,
+  X,
+  Network
+} from 'lucide-react';
+import VectorGraph from './components/VectorGraph';
+
+const INITIAL_STATE = {
+  "okrs": [
+    {
+      "id": "okr_1",
+      "title": "Financial Velocity via Solo Hackathons",
+      "target": "₹1,200,000",
+      "current": "₹150,000",
+      "progress_percentage": 12.5,
+      "deadline": "July 31, 2026",
+      "key_results": ["Win 2 major agentic AI bounties", "Close 3 Bodhon client retainers"]
+    },
+    {
+      "id": "okr_2",
+      "title": "Academic Mastery: GATE DA",
+      "target": "100% Syllabus Completion",
+      "current": "45%",
+      "progress_percentage": 45,
+      "deadline": "Feb 2027",
+      "key_results": ["Score >85% on 3 consecutive mock tests", "Complete Probability & Stats module"]
+    }
+  ],
+  "active_sprint": {
+    "sprint_name": "Sprint 42: Agentic Pipelines",
+    "days_remaining": 4,
+    "velocity_score": "A-",
+    "tasks": [
+      { "id": "t1", "title": "Integrate Gemini API into OttoMail core", "type": "Build", "status": "In Progress" },
+      { "id": "t2", "title": "Draft architecture for new Bodhon client project", "type": "Build", "status": "Todo" },
+      { "id": "t3", "title": "GATE DA: Linear Algebra practice set", "type": "Study", "status": "Done" }
+    ]
+  },
+  "registry": [
+    {
+      "component_id": "comp_alpha_042",
+      "title": "OttoMail: Local LLM Email Parsing Engine",
+      "category": "Agentic AI Tools",
+      "integration_time_mins": 25,
+      "reliability": "A",
+      "tags": ["Llama 3", "Python", "Local-First"],
+      "friction_log": "Rate limiting triggered on IMAP batch fetch. Solved with 2s sleep buffer."
+    }
+  ]
+};
+
+type View = 'command' | 'sprint' | 'registry' | 'topology';
 
 export default function App() {
-  const [state, setState] = useState<any>(null);
-  const [isHabitPanelOpen, setIsHabitPanelOpen] = useState(false);
+  const [activeView, setActiveView] = useState<View>('command');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  const fetchData = async () => {
-    const res = await fetch('/api/state');
-    const data = await res.json();
-    setState(data);
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const handleLog = async (habitId: string) => {
-    const res = await fetch('/api/log', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ habitId })
-    });
-    if (res.ok) {
-      fetchData();
-    } else {
-      const err = await res.json();
-      alert(err.error);
+  const renderContent = () => {
+    switch (activeView) {
+      case 'command':
+        return <CommandCenter okrs={INITIAL_STATE.okrs} />;
+      case 'sprint':
+        return <ActiveSprint sprint={INITIAL_STATE.active_sprint} />;
+      case 'registry':
+        return <SystemRegistry registry={INITIAL_STATE.registry} />;
+      case 'topology':
+        return <VectorGraph />;
+      default:
+        return null;
     }
   };
 
-  if (!state) return <div className="flex items-center justify-center h-screen bg-vedic-dark text-brass">Initializing Yuga...</div>;
-
-  const isDarkAge = state.habits.every((h: any) => h.streak === 0);
-
   return (
-    <div className="relative h-screen w-screen overflow-hidden">
-      {/* Background Map */}
-      <div className={isDarkAge ? 'grayscale contrast-125 brightness-50 transition-all duration-1000' : 'transition-all duration-1000'}>
-        <IsometricMap era={state.state.era} stats={state.state} />
-      </div>
-
-      {/* HUD Overlay */}
-      <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-8">
+    <div className="flex h-screen bg-bg text-white font-sans overflow-hidden">
+      {/* Sidebar */}
+      <aside className={`${isSidebarOpen ? 'w-64' : 'w-16'} transition-all duration-200 border-r border-border bg-surface flex flex-col`}>
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          {isSidebarOpen && <span className="font-mono font-bold tracking-tighter text-xl">VERTEX_v1.0</span>}
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-1 hover:bg-border transition-colors">
+            {isSidebarOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
+        </div>
         
-        {/* Top Bar: Stats */}
-        <div className="flex justify-between items-start pointer-events-auto">
-          <div className="flex flex-col gap-4">
-            <div className="flex gap-3">
-              <StatCard icon={<Coins size={18}/>} label="Treasury" value={`${state.state.gold} G`} color="text-yellow-400" />
-              <StatCard icon={<Microscope size={18}/>} label="Research" value={state.state.research_points} color="text-blue-400" />
-              <StatCard icon={<Palette size={18}/>} label="Culture" value={state.state.culture_points} color="text-pink-400" />
-            </div>
-            <AdvisoryCouncil />
-          </div>
+        <nav className="flex-1 py-4">
+          <NavItem 
+            icon={<Target size={18} />} 
+            label="COMMAND_CENTER" 
+            active={activeView === 'command'} 
+            onClick={() => setActiveView('command')} 
+            collapsed={!isSidebarOpen}
+          />
+          <NavItem 
+            icon={<Zap size={18} />} 
+            label="ACTIVE_SPRINT" 
+            active={activeView === 'sprint'} 
+            onClick={() => setActiveView('sprint')} 
+            collapsed={!isSidebarOpen}
+          />
+          <NavItem 
+            icon={<Database size={18} />} 
+            label="SYSTEM_REGISTRY" 
+            active={activeView === 'registry'} 
+            onClick={() => setActiveView('registry')} 
+            collapsed={!isSidebarOpen}
+          />
+          <NavItem 
+            icon={<Network size={18} />} 
+            label="CAPABILITY_VECTORS" 
+            active={activeView === 'topology'} 
+            onClick={() => setActiveView('topology')} 
+            collapsed={!isSidebarOpen}
+          />
+        </nav>
 
-          <div className="text-right">
-            <motion.h1 
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="font-display text-5xl font-bold brass-text tracking-tighter"
-            >
-              YUGA
-            </motion.h1>
-            <p className="text-[10px] uppercase tracking-[0.4em] opacity-50 mt-1">The Architect's Epoch</p>
-            {isDarkAge && (
-              <motion.p 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-red-500 text-[10px] font-bold uppercase tracking-widest mt-2 animate-pulse"
-              >
-                ⚠️ DARK AGE DETECTED
-              </motion.p>
-            )}
-          </div>
-        </div>
-
-        {/* Bottom Bar: Era & Controls */}
-        <div className="flex justify-between items-end pointer-events-auto">
-          <div className="sandstone-border p-5 bg-vedic-dark/90 backdrop-blur rounded-tr-3xl min-w-[240px]">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-sandstone/20 rounded-xl">
-                <Landmark className="text-sandstone" size={28} />
-              </div>
-              <div>
-                <p className="text-[10px] uppercase opacity-50 tracking-widest">Current Civilization Era</p>
-                <p className="font-display text-2xl brass-text">{state.state.era} Epoch</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-6">
-             <div className="text-right">
-                <p className="text-[10px] uppercase opacity-50 mb-1">Population</p>
-                <p className="font-mono text-xl font-bold flex items-center gap-2 justify-end">
-                  <Users size={16} className="text-blue-400" />
-                  {state.state.population}
-                </p>
-             </div>
-            <button 
-              onClick={() => setIsHabitPanelOpen(true)}
-              className="w-16 h-16 bg-sandstone text-white rounded-full shadow-[0_0_30px_rgba(226,114,91,0.4)] hover:scale-110 active:scale-95 transition-all flex items-center justify-center pointer-events-auto border-4 border-white/20"
-            >
-              <Menu size={32} />
-            </button>
+        <div className="p-4 border-t border-border">
+          <div className="flex items-center gap-3 opacity-50">
+            <Activity size={14} />
+            {isSidebarOpen && <span className="text-[10px] font-mono tracking-widest">SYSTEM_STABLE</span>}
           </div>
         </div>
-      </div>
+      </aside>
 
-      {/* Habit Panel */}
-      <HabitPanel 
-        habits={state.habits} 
-        onLog={handleLog} 
-        isOpen={isHabitPanelOpen} 
-        onClose={() => setIsHabitPanelOpen(false)} 
-      />
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto bg-bg p-8">
+        <header className="mb-8 flex justify-between items-end border-b border-border pb-4">
+          <div>
+            <h1 className="text-xs font-mono text-muted mb-1 tracking-widest uppercase">
+              {activeView.replace('_', ' ')} / TELEMETRY_STREAM
+            </h1>
+            <h2 className="text-2xl font-bold tracking-tight">
+              {activeView === 'command' && 'MACRO_STRATEGY_OVERVIEW'}
+              {activeView === 'sprint' && 'EXECUTION_LAYER_STATUS'}
+              {activeView === 'registry' && 'CODE_ARCHITECTURE_WAREHOUSE'}
+              {activeView === 'topology' && 'CAPABILITY_TOPOLOGY_MAP'}
+            </h2>
+          </div>
+          <div className="text-right font-mono text-[10px] text-muted">
+            <p>LATENCY: 14ms</p>
+            <p>UPTIME: 99.99%</p>
+          </div>
+        </header>
 
-      {/* Decorative Overlays */}
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.5)_100%)]" />
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brass/30 to-transparent" />
-      <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-sandstone/30 to-transparent" />
+        {renderContent()}
+      </main>
     </div>
   );
 }
 
-function StatCard({ icon, label, value, color }: { icon: React.ReactNode, label: string, value: string, color: string }) {
+function NavItem({ icon, label, active, onClick, collapsed }: { icon: React.ReactNode, label: string, active: boolean, onClick: () => void, collapsed: boolean }) {
   return (
-    <div className="bg-vedic-dark/60 backdrop-blur border border-white/10 p-2 px-4 rounded-lg flex items-center gap-3">
-      <div className={color}>{icon}</div>
-      <div>
-        <p className="text-[8px] uppercase opacity-50 leading-none">{label}</p>
-        <p className="font-mono text-sm font-bold">{value}</p>
+    <button 
+      onClick={onClick}
+      className={`w-full flex items-center gap-4 px-4 py-3 transition-colors relative group
+        ${active ? 'bg-border text-white' : 'text-muted hover:text-white hover:bg-border/50'}`}
+    >
+      <div className={active ? 'text-white' : 'text-muted group-hover:text-white'}>{icon}</div>
+      {!collapsed && <span className="font-mono text-xs tracking-wider">{label}</span>}
+      {active && <div className="absolute right-0 top-0 h-full w-1 bg-white" />}
+    </button>
+  );
+}
+
+function CommandCenter({ okrs }: { okrs: any[] }) {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {okrs.map((okr) => (
+        <div key={okr.id} className="telemetry-card">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <h3 className="text-lg font-bold mb-1">{okr.title}</h3>
+              <p className="text-xs text-muted font-mono">DEADLINE: {okr.deadline}</p>
+            </div>
+            <div className="text-right">
+              <span className="text-2xl font-mono font-bold">{okr.progress_percentage}%</span>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <div className="flex justify-between text-[10px] font-mono text-muted mb-2">
+              <span>CURRENT: {okr.current}</span>
+              <span>TARGET: {okr.target}</span>
+            </div>
+            <div className="progress-bar">
+              <div className="progress-fill" style={{ width: `${okr.progress_percentage}%` }} />
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-[10px] font-mono text-muted mb-3 tracking-widest uppercase">Key Results</h4>
+            <ul className="space-y-2">
+              {okr.key_results.map((kr: string, i: number) => (
+                <li key={i} className="flex items-center gap-3 text-sm text-muted">
+                  <ChevronRight size={14} className="text-accent" />
+                  <span>{kr}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ActiveSprint({ sprint }: { sprint: any }) {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="telemetry-card flex flex-col justify-between">
+          <span className="text-[10px] font-mono text-muted tracking-widest uppercase">Sprint Name</span>
+          <span className="text-xl font-bold">{sprint.sprint_name}</span>
+        </div>
+        <div className="telemetry-card flex flex-col justify-between">
+          <span className="text-[10px] font-mono text-muted tracking-widest uppercase">Time Remaining</span>
+          <span className="text-xl font-mono font-bold">{sprint.days_remaining} DAYS</span>
+        </div>
+        <div className="telemetry-card flex flex-col justify-between">
+          <span className="text-[10px] font-mono text-muted tracking-widest uppercase">Velocity Score</span>
+          <span className="text-xl font-mono font-bold text-accent">{sprint.velocity_score}</span>
+        </div>
       </div>
+
+      <div className="telemetry-card">
+        <h3 className="text-[10px] font-mono text-muted mb-6 tracking-widest uppercase">Task Execution Queue</h3>
+        <div className="space-y-1">
+          {sprint.tasks.map((task: any) => (
+            <div key={task.id} className="flex items-center justify-between p-3 border border-border hover:bg-border/20 transition-colors group">
+              <div className="flex items-center gap-4">
+                <div className={`w-2 h-2 rounded-none ${
+                  task.status === 'Done' ? 'bg-green-500' : 
+                  task.status === 'In Progress' ? 'bg-blue-500' : 'bg-muted'
+                }`} />
+                <span className="text-sm">{task.title}</span>
+              </div>
+              <div className="flex items-center gap-6">
+                <span className="text-[10px] font-mono text-muted uppercase tracking-tighter">{task.type}</span>
+                <span className={`text-[10px] font-mono px-2 py-0.5 border ${
+                  task.status === 'Done' ? 'border-green-500 text-green-500' : 
+                  task.status === 'In Progress' ? 'border-blue-500 text-blue-500' : 'border-muted text-muted'
+                }`}>
+                  {task.status.toUpperCase()}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SystemRegistry({ registry }: { registry: any[] }) {
+  return (
+    <div className="space-y-6">
+      {registry.map((item) => (
+        <div key={item.component_id} className="telemetry-card">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <Code2 size={18} className="text-accent" />
+                <h3 className="text-lg font-bold">{item.title}</h3>
+              </div>
+              <p className="text-xs text-muted font-mono uppercase tracking-tighter">{item.category} / {item.component_id}</p>
+            </div>
+            <div className="flex gap-4">
+              <div className="text-right">
+                <p className="text-[10px] font-mono text-muted uppercase">Reliability</p>
+                <p className="text-lg font-mono font-bold text-accent">{item.reliability}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-mono text-muted uppercase">Integration</p>
+                <p className="text-lg font-mono font-bold">{item.integration_time_mins}m</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-2 mb-6">
+            {item.tags.map((tag: string) => (
+              <span key={tag} className="text-[10px] font-mono px-2 py-1 bg-border text-muted">
+                {tag.toUpperCase()}
+              </span>
+            ))}
+          </div>
+
+          <div className="bg-bg p-4 border border-border">
+            <div className="flex items-center gap-2 mb-2">
+              <Terminal size={14} className="text-muted" />
+              <span className="text-[10px] font-mono text-muted uppercase tracking-widest">Friction Log</span>
+            </div>
+            <p className="text-sm font-mono text-muted leading-relaxed">
+              {item.friction_log}
+            </p>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

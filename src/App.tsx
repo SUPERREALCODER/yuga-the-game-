@@ -16,9 +16,11 @@ import {
   ChevronRight,
   Menu,
   X,
-  Network
+  Network,
+  Plus
 } from 'lucide-react';
 import VectorGraph from './components/VectorGraph';
+import DataIngestModal from './components/DataIngestModal';
 
 const INITIAL_STATE = {
   "okrs": [
@@ -69,6 +71,7 @@ type View = 'command' | 'sprint' | 'registry' | 'topology';
 export default function App() {
   const [activeView, setActiveView] = useState<View>('command');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isIngestModalOpen, setIsIngestModalOpen] = useState(false);
 
   const renderContent = () => {
     switch (activeView) {
@@ -125,6 +128,16 @@ export default function App() {
             onClick={() => setActiveView('topology')} 
             collapsed={!isSidebarOpen}
           />
+          
+          <div className="mt-8 px-4">
+            <button 
+              onClick={() => setIsIngestModalOpen(true)}
+              className={`w-full flex items-center justify-center gap-2 py-3 border border-accent text-accent hover:bg-accent hover:text-black transition-all font-mono text-[10px] font-bold tracking-widest ${!isSidebarOpen && 'px-0'}`}
+            >
+              <Plus size={14} />
+              {isSidebarOpen && "NEW_ENTRY"}
+            </button>
+          </div>
         </nav>
 
         <div className="p-4 border-t border-border">
@@ -157,6 +170,10 @@ export default function App() {
 
         {renderContent()}
       </main>
+      <DataIngestModal 
+        isOpen={isIngestModalOpen} 
+        onClose={() => setIsIngestModalOpen(false)} 
+      />
     </div>
   );
 }
